@@ -1,4 +1,4 @@
-import os, requests
+import os, requests, random
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -20,6 +20,31 @@ QUACK_PHRASES = ["quack", "duck", "gizzy"]
 
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
+@app.command("/meow_button")
+def meow_button(ack, say):
+    ack()
+    say(
+        text="Meow! :3",
+        blocks=[
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Click me :3"},
+                        "action_id": "meow_button",
+                        "value": "meow"
+                    }
+                ]
+            }
+        ]
+    )
+
+@app.action("meow_button")
+def meow_action(ack, say):
+    ack()
+    say(text=random.choice(MEOW_PHRASES))
+
 @app.command("/meow")
 def meow(ack, say):
     ack()
@@ -27,14 +52,14 @@ def meow(ack, say):
         text="Meow! :3",
         blocks=[
             {
-            "type": "image",
-            "title": {
-                "type": "plain_text",
-                "text": "Meow!"
-            },
-            "block_id": "image4",
-            "image_url": "https://cataas.com/cat/cute/says/Meow",
-            "alt_text": ":3"
+                "type": "image",
+                "title": {
+                    "type": "plain_text",
+                    "text": "Meow!"
+                },
+                "block_id": "image4",
+                "image_url": "https://cataas.com/cat/cute/says/Meow",
+                "alt_text": ":3"
             }
         ]
     )
@@ -46,14 +71,61 @@ def quack(ack, say):
         text="Quack! :3",
         blocks=[
             {
-            "type": "image",
-            "title": {
-                "type": "plain_text",
-                "text": "Quack!"
-            },
-            "block_id": "image4",
-            "image_url": requests.get("https://random-d.uk/api/quack").json()["url"],
-            "alt_text": ":3"
+                "type": "image",
+                "title": {
+                    "type": "plain_text",
+                    "text": "Quack!"
+                },
+                "block_id": "image4",
+                "image_url": requests.get("https://random-d.uk/api/quack").json()["url"],
+                "alt_text": ":3"
+            }
+        ]
+    )
+
+@app.command("/cat_fact")
+def cat_fact(ack, say):
+    ack()
+    fact = requests.get("https://catfact.ninja/fact").json()["fact"]
+    say(
+        text="Cat Fact: " + fact,
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Cat Fact: " + fact
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "New fact"},
+                    "action_id": "cat_fact_button",
+                    "value": "meow"
+                }
+            }
+        ]
+    )
+
+@app.action("cat_fact_button")
+def cat_fact_button(ack, respond):
+    ack()
+    fact = requests.get("https://catfact.ninja/fact").json()["fact"]
+    respond(
+        replace_original=True,
+        text="Cat Fact: " + fact,
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Cat Fact: " + fact
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "New fact"},
+                    "action_id": "cat_fact_button",
+                    "value": "meow"
+                }
             }
         ]
     )
@@ -66,14 +138,14 @@ def message_handler(body, say):
             text="Meow! :3",
             blocks=[
                 {
-                "type": "image",
-                "title": {
-                    "type": "plain_text",
-                    "text": "Meow!"
-                },
-                "block_id": "image4",
-                "image_url": requests.get("https://cataas.com/cat/cute/says/Meow?json=true").json()["url"] ,
-                "alt_text": ":3"
+                    "type": "image",
+                    "title": {
+                        "type": "plain_text",
+                        "text": "Meow!"
+                    },
+                    "block_id": "image4",
+                    "image_url": requests.get("https://cataas.com/cat/cute/says/Meow?json=true").json()["url"] ,
+                    "alt_text": ":3"
                 }
             ]
         )
@@ -82,14 +154,14 @@ def message_handler(body, say):
             text="Quack! :3",
             blocks=[
                 {
-                "type": "image",
-                "title": {
-                    "type": "plain_text",
-                    "text": "Quack!"
-                },
-                "block_id": "image4",
-                "image_url": requests.get("https://random-d.uk/api/quack").json()["url"],
-                "alt_text": ":3"
+                    "type": "image",
+                    "title": {
+                        "type": "plain_text",
+                        "text": "Quack!"
+                    },
+                    "block_id": "image4",
+                    "image_url": requests.get("https://random-d.uk/api/quack").json()["url"],
+                    "alt_text": ":3"
                 }
             ]
         )
