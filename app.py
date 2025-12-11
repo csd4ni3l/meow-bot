@@ -3,18 +3,32 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 MEOW_PHRASES = [
-    ":3", " >:3",
+    ":3", ">:3",
     "meow", "mew", "meww", "mrrp", "mrrrp", "mrp", "mrrrow",
     "purr", "prr", "prrr",
     "nya", "nyan", "nyaa", "nyaaa", "nyanyanya", "nya~", "nya!",
-    "owo", "uwu", "qwq", " >w<", " ^_^",
+    "owo", "uwu", "qwq", ">w<", "^_^",
     "=^.^=", "(=^･^=)",
     "*meow*", "*purr*", "*mrrp*", "*nya*",
     "chirp", "eep",
-    "nyoom", "rawr"
+    "nyoom", "rawr",
+    "cat"
 ]
 
-QUACK_PHRASES = ["quack", "duck", "gizzy"]
+CAT_EMOJI = "cat"
+DUCK_EMOJI = "duck"
+
+QUACK_PHRASES = ["quack", "duck"]
+
+WELCOME_MESSAGE = """
+mrrrp… hiii :3
+*arches back, tail wiggle*
+
+meow-meow, nyaaa~ I bring u cozy purrs and tiny toe-beans of chaos >:3c
+sniff sniff… u smell like someone who needs a soft head-bonk *bonk*
+
+mew! I shall now sit on your keyboard for maximum inconvenience
+"""
 
 http_cat_codes = [
     100, 101, 102, 103,
@@ -77,7 +91,7 @@ def meow_translate(ack, say, command):
     user = command["user_id"]
     ack()
     say(
-        text=f"<@{user}> said " + " ".join([random.choice(MEOW_PHRASES) for _ in range(len(text.split(" ")))])
+        text=f"<@{user}> said " + " ".join([random.choice(MEOW_PHRASES) for _ in range(len(text.split(" ")))], mrkdown=False)
     )
 
 @app.command("/meow_button")
@@ -101,9 +115,10 @@ def meow_button(ack, say):
     )
 
 @app.action("meow_button")
-def meow_action(ack, say):
+def meow_action(ack, say, body):
+    ts = body["message"].get("thread_ts", body["message"]["ts"])
     ack()
-    say(text=random.choice(MEOW_PHRASES))
+    say(text=random.choice(MEOW_PHRASES), thread_ts=ts, mrkdown=False)
 
 @app.command("/meow")
 def meow(ack, say):
@@ -199,22 +214,18 @@ def cat_fact_button(ack, respond):
 @app.event("app_mention")
 def mention(body, say):
     thread_ts = body['event']['ts']
-    say(
-        text="""
-mrrrp… hiii :3
-*arches back, tail wiggle*
-
-meow-meow, nyaaa~ I bring u cozy purrs and tiny toe-beans of chaos >:3c
-sniff sniff… u smell like someone who needs a soft head-bonk *bonk*
-
-mew! I shall now sit on your keyboard for maximum inconvenience
-""", thread_ts=thread_ts)
+    say(text=WELCOME_MESSAGE, thread_ts=thread_ts)
 
 @app.event("message")
-def message_handler(body, say):
-    event = body.get("event", {})
+def message_handler(event, say, client, message):
     ts = event.get('ts')
     message_text = event.get('text', '').lower()
+    channel_id = message["channel"]
+    message_ts = message["ts"]
+
+    if event.get("channel_type") == "im" and "bot_id" not in event:
+        say(WELCOME_MESSAGE)
+        return
 
     found_status_codes = [status_code for status_code in http_cat_codes if str(status_code) in message_text.lower()]
 
@@ -224,18 +235,36 @@ def message_handler(body, say):
             blocks=generate_meow_blocks(),
             thread_ts=ts
         )
+        client.reactions_add(
+            channel=channel_id,
+            name=CAT_EMOJI,
+            timestamp=message_ts
+        )
     elif any([phrase in message_text.lower().split() for phrase in QUACK_PHRASES]):
         say(
             text="Quack! :3",
             blocks=generate_quack_blocks(),
             thread_ts=ts
         )
+        
+        client.reactions_add(
+            channel=channel_id,
+            name=DUCK_EMOJI,
+            timestamp=message_ts
+        )
+
     elif found_status_codes:
         status_code = found_status_codes[0]
         say(
             text=f"CAT {status_code} {http.HTTPStatus(status_code).phrase} :3",
             blocks=generate_httpcat_blocks(status_code),
             thread_ts=ts
+        )
+        
+        client.reactions_add(
+            channel=channel_id,
+            name=CAT_EMOJI,
+            timestamp=message_ts
         )
 
 if __name__ == "__main__":
