@@ -1,47 +1,36 @@
-import os, requests, random, http
+import os, requests, random, http, re, dotenv
+
+from constants import *
+
+from openrouter import OpenRouter
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-MEOW_PHRASES = [
-    ":3", ">:3",
-    "meow", "mew", "meww", "mrrp", "mrrrp", "mrp", "mrrrow",
-    "purr", "prr", "prrr",
-    "nya", "nyan", "nyaa", "nyaaa", "nyanyanya", "nya~", "nya!",
-    "owo", "uwu", "qwq", ">w<", "^_^",
-    "=^.^=", "(=^･^=)",
-    "*meow*", "*purr*", "*mrrp*", "*nya*",
-    "chirp", "eep",
-    "nyoom", "rawr",
-    "cat"
-]
+dotenv.load_dotenv(".env")
 
-CAT_EMOJI = "cat"
-DUCK_EMOJI = "duck"
+openrouter_client = OpenRouter(
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    server_url=os.getenv("OPENROUTER_URL"),
+)
 
-QUACK_PHRASES = ["quack", "duck"]
+def catify_text(text):
+    text = text.lower()
+    
+    text = re.sub(r'[rl]', 'w', text)
+    text = re.sub(r'na', 'nya', text)
+    text = re.sub(r'tion\b', 'shun', text)
+    text = re.sub(r'th', 'd', text)
+    text = re.sub(r'ou', 'uw', text)
+    text = re.sub(r'ove', 'uv', text)
+    text = re.sub(r'!+', ' nya~ >w<', text)
+    text = re.sub(r'\?+', ' nyaaaa?', text)
+    
+    if not re.search(r'nya|mew|meow|uwu|owo', text):
+        text += ' nya~'
 
-WELCOME_MESSAGE = """
-mrrrp… hiii :3
-*arches back, tail wiggle*
+    return text
 
-meow-meow, nyaaa~ I bring u cozy purrs and tiny toe-beans of chaos >:3c
-sniff sniff… u smell like someone who needs a soft head-bonk *bonk*
-
-mew! I shall now sit on your keyboard for maximum inconvenience
-"""
-
-http_cat_codes = [
-    100, 101, 102, 103,
-    200, 201, 202, 203, 204, 205, 206, 207, 208, 214, 226,
-    300, 301, 302, 303, 304, 305, 307, 308,
-    400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415,
-    416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 428, 429, 431, 444, 450,
-    451, 495, 496, 497, 498, 499,
-    500, 501, 502, 503, 504, 506, 507, 508, 509, 510, 511, 521, 522, 523, 525, 530,
-    599
-]
-
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+app = App(token=os.environ.get("BOT_TOKEN"))
 
 def generate_httpcat_blocks(status_code):
     return [
@@ -85,18 +74,21 @@ def generate_quack_blocks():
         }
     ]
 
-@app.command("/meow_translate")
-def meow_translate(ack, say, command):
+@app.command("/catify")
+def catify(ack, say, command):
     text = command.get("text", "")
     user = command["user_id"]
+
     ack()
+
     say(
-        text=f"<@{user}> said " + " ".join([random.choice(MEOW_PHRASES) for _ in range(len(text.split(" ")))], mrkdown=False)
+        text=f"<@{user}> said " + catify_text(text), mrkdwn=False
     )
 
 @app.command("/meow_button")
 def meow_button(ack, say):
     ack()
+
     say(
         text="Meow! :3",
         blocks=[
@@ -116,13 +108,16 @@ def meow_button(ack, say):
 
 @app.action("meow_button")
 def meow_action(ack, say, body):
-    ts = body["message"].get("thread_ts", body["message"]["ts"])
     ack()
-    say(text=random.choice(MEOW_PHRASES), thread_ts=ts, mrkdown=False)
+    
+    ts = body["message"].get("thread_ts", body["message"]["ts"])
+    
+    say(text=random.choice(MEOW_PHRASES), thread_ts=ts, mrkdwn=False)
 
 @app.command("/meow")
 def meow(ack, say):
     ack()
+
     say(
         text="Meow! :3",
         blocks=generate_meow_blocks()
@@ -131,6 +126,7 @@ def meow(ack, say):
 @app.command("/cat_gif")
 def cat_gif(ack, say):
     ack()
+
     say(
         text="Coming soon! nyanyanya"
     )
@@ -224,7 +220,17 @@ def message_handler(event, say, client, message):
     message_ts = message["ts"]
 
     if event.get("channel_type") == "im" and "bot_id" not in event:
-        say(WELCOME_MESSAGE)
+        response = openrouter_client.chat.send(
+            model=os.getenv("OPENROUTER_MODEL"),
+            messages=[
+                {"role": "assistant", "content": AI_SYSTEM_PROMPT},
+                {"role": "user", "content": message_text}
+            ],
+            stream=False,
+        )
+
+        say(response.choices[0].message.content)
+        
         return
 
     found_status_codes = [status_code for status_code in http_cat_codes if str(status_code) in message_text.lower()]
@@ -254,7 +260,7 @@ def message_handler(event, say, client, message):
         )
 
     elif found_status_codes:
-        status_code = found_status_codes[0]
+        status_code = int(found_status_codes[0])
         say(
             text=f"CAT {status_code} {http.HTTPStatus(status_code).phrase} :3",
             blocks=generate_httpcat_blocks(status_code),
@@ -268,4 +274,4 @@ def message_handler(event, say, client, message):
         )
 
 if __name__ == "__main__":
-    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+    SocketModeHandler(app, os.environ["APP_TOKEN"]).start()
