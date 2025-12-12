@@ -220,12 +220,13 @@ def message_handler(event, say, client, message):
     message_ts = message["ts"]
 
     if event.get("channel_type") == "im" and "bot_id" not in event:
+        messages = [{"role": "system", "content": AI_SYSTEM_PROMPT}]
+        messages.extend([{"role": "assistant" if "bot_id" in msg else "user", "content": msg.get("text", "")} for msg in client.conversations_history(channel=channel_id, limit=AI_CONTEXT_MSG_LIMIT).get("messages", [])])
+        messages.append({"role": "user", "content": message_text})
+
         response = openrouter_client.chat.send(
             model=os.getenv("OPENROUTER_MODEL"),
-            messages=[
-                {"role": "assistant", "content": AI_SYSTEM_PROMPT},
-                {"role": "user", "content": message_text}
-            ],
+            messages=messages,
             stream=False,
         )
 

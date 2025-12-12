@@ -11,6 +11,8 @@ MEOW_PHRASES = [
     "cat"
 ]
 
+AI_CONTEXT_MSG_LIMIT = 10
+
 CAT_EMOJI = "cat"
 DUCK_EMOJI = "duck"
 
