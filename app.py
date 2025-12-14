@@ -55,7 +55,7 @@ def generate_meow_blocks():
                 "text": "Meow!"
             },
             "block_id": "image4",
-            "image_url": requests.get("https://cataas.com/cat/cute/says/Meow").json()["url"],
+            "image_url": requests.get("https://cataas.com/cat/cute/says/Meow?json=true").json()["url"],
             "alt_text": ":3"
         }
     ]
