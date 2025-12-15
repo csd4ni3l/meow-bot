@@ -83,7 +83,7 @@ def generate_quack_blocks():
         }
     ]
 
-@app.command("/optin")
+@app.command("/meowbot-optin")
 def optin(ack, respond, command):
     ack()
 
@@ -96,7 +96,7 @@ def optin(ack, respond, command):
         text="You have succesfully opted back in owo >:3"
     )
 
-@app.command("/optout")
+@app.command("/meowbot-optout")
 def optout(ack, respond, command):
     ack()
 
