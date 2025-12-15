@@ -93,7 +93,7 @@ def optin(ack, respond, command):
         file.write(json.dumps(optouts, indent=4))
 
     respond(
-        text="You have succesfully opted back in owo >:3", mrkdwn=False
+        text="You have succesfully opted back in owo >:3"
     )
 
 @app.command("/optout")
@@ -106,7 +106,7 @@ def optout(ack, respond, command):
         file.write(json.dumps(optouts, indent=4))
 
     respond(
-        text="You have succesfully opted out nyaaa >:c", mrkdwn=False
+        text="You have succesfully opted out nyaaa >:c"
     )
 
 @app.command("/catify")
