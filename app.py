@@ -1,10 +1,19 @@
-import os, requests, random, http, re, dotenv
+import os, requests, random, http, re, dotenv, json
 
 from constants import *
 
 from openrouter import OpenRouter
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+
+if not os.path.exists("optouts.json"):
+    with open("optouts.json", "w") as file:
+        file.write("[]")
+
+    optouts = []
+else:
+    with open("optouts.json", "r") as file:
+        optouts = json.load(file)
 
 dotenv.load_dotenv(".env")
 
@@ -73,6 +82,32 @@ def generate_quack_blocks():
             "alt_text": ":3"
         }
     ]
+
+@app.command("/optin")
+def optin(ack, respond, command):
+    ack()
+
+    optouts.remove(command["user_id"])
+
+    with open("optouts.json", "w") as file:
+        file.write(json.dumps(optouts, indent=4))
+
+    respond(
+        text="You have succesfully opted back in owo >:3", mrkdwn=False
+    )
+
+@app.command("/optout")
+def optout(ack, respond, command):
+    ack()
+
+    optouts.append(command["user_id"])
+
+    with open("optouts.json", "w") as file:
+        file.write(json.dumps(optouts, indent=4))
+
+    respond(
+        text="You have succesfully opted out nyaaa >:c", mrkdwn=False
+    )
 
 @app.command("/catify")
 def catify(ack, say, command):
@@ -221,6 +256,7 @@ def message_handler(event, say, client, message):
     message_text = event.get('text', '').lower()
     channel_id = message["channel"]
     message_ts = message["ts"]
+    user_id = message.get("user", "")
 
     if event.get("channel_type") == "im":
         messages = [{"role": "system", "content": AI_SYSTEM_PROMPT}]
@@ -235,6 +271,9 @@ def message_handler(event, say, client, message):
 
         say(response.choices[0].message.content)
         
+        return
+
+    if user_id in optouts:
         return
 
     found_status_codes = [status_code for status_code in http_cat_codes if str(status_code) in message_text.lower().split()]
