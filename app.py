@@ -214,12 +214,15 @@ def mention(body, say):
 
 @app.event("message")
 def message_handler(event, say, client, message):
+    if "bot_id" in event:
+        return
+    
     ts = event.get('ts')
     message_text = event.get('text', '').lower()
     channel_id = message["channel"]
     message_ts = message["ts"]
 
-    if event.get("channel_type") == "im" and "bot_id" not in event:
+    if event.get("channel_type") == "im":
         messages = [{"role": "system", "content": AI_SYSTEM_PROMPT}]
         messages.extend([{"role": "assistant" if "bot_id" in msg else "user", "content": msg.get("text", "")} for msg in client.conversations_history(channel=channel_id, limit=AI_CONTEXT_MSG_LIMIT).get("messages", [])])
         messages.append({"role": "user", "content": message_text})
@@ -234,7 +237,7 @@ def message_handler(event, say, client, message):
         
         return
 
-    found_status_codes = [status_code for status_code in http_cat_codes if str(status_code) in message_text.lower()]
+    found_status_codes = [status_code for status_code in http_cat_codes if str(status_code) in message_text.lower().split()]
 
     if any([phrase in message_text.lower().split() for phrase in MEOW_PHRASES]):
         say(
