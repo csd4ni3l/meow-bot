@@ -244,6 +244,9 @@ def cat_fact_button(ack, respond):
 
 @app.event("app_mention")
 def mention(body, say):
+    if "bot_id" in body["event"]:
+        return
+
     thread_ts = body['event']['ts']
     say(text=WELCOME_MESSAGE, thread_ts=thread_ts)
 
@@ -305,7 +308,7 @@ def message_handler(event, say, client, message):
     elif found_status_codes:
         status_code = int(found_status_codes[0])
         say(
-            text=f"CAT {status_code} {http.HTTPStatus(status_code).phrase} :3",
+            text=f"CAT {status_code} {http.HTTPStatus(status_code).phrase if not status_code in description_overrides else description_overrides[status_code]} :3",
             blocks=generate_httpcat_blocks(status_code),
             thread_ts=ts
         )
