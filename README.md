@@ -22,3 +22,8 @@ OR
 - Move `.env.example` to `.env` and update the example values inside.
 - Update `constants.py` if you want to change any default values.
 - Run with `uv run app.py` or `python3 app.py` depending on the environment
+## Mirrors
+
+[![Forgejo](https://img.shields.io/badge/Forgejo-git.csd4ni3l.hu-1e90ff)](https://git.csd4ni3l.hu/csd4ni3l/meow-bot)
+[![GitHub](https://img.shields.io/badge/GitHub-github.com-181717)](https://github.com/csd4ni3l/meow-bot)
+[![Codeberg](https://img.shields.io/badge/Codeberg-codeberg.org-2185D0)](https://codeberg.org/csd4ni3l/meow-bot)
